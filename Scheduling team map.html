@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scheduling Team Region Divide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.2em;
+            font-weight: 300;
+            margin: 0;
+        }
+        
+        .search-section {
+            background: white;
+            margin: 20px;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .search-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .search-btn {
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .search-btn:hover {
+            background: #2980b9;
+        }
+        
+        .search-result {
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            border: 2px solid transparent;
+        }
+        
+        .result-region1 {
+            background: #fff5f5;
+            color: #c53030;
+            border-color: #fc8181;
+        }
+        
+        .result-region2 {
+            background: #f0f8ff;
+            color: #2b6cb0;
+            border-color: #63b3ed;
+        }
+        
+        .result-region3 {
+            background: #f0fff4;
+            color: #38a169;
+            border-color: #68d391;
+        }
+        
+        .result-placeholder {
+            background: #f8fafc;
+            color: #718096;
+            border-color: #e2e8f0;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            margin: 20px;
+        }
+        
+        .map-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .map-svg {
+            width: 100%;
+            height: 700px;
+            border-radius: 8px;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .region-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid;
+        }
+        
+        .region-card.region1-card { border-left-color: #e53e3e; }
+        .region-card.region2-card { border-left-color: #3182ce; }
+        .region-card.region3-card { border-left-color: #38a169; }
+        
+        .region-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #2d3748;
+        }
+        
+        .population-stat {
+            background: #f7fafc;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .cities-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            font-size: 13px;
+        }
+        
+        .city-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .city-major { background: #edf2f7; color: #4a5568; }
+        .city-border { background: #fef5e7; color: #d69e2e; }
+        .city-capital { background: #faf5ff; color: #805ad5; }
+        
+        /* Map regions */
+        .region1 { fill: #e53e3e; opacity: 0.75; stroke: #c53030; stroke-width: 2; }
+        .region2 { fill: #3182ce; opacity: 0.75; stroke: #2c5282; stroke-width: 2; }
+        .region3 { fill: #38a169; opacity: 0.75; stroke: #2f855a; stroke-width: 2; }
+        
+        .region1:hover, .region2:hover, .region3:hover { opacity: 0.9; }
+        
+        /* City markers */
+        .city-dot { fill: #2d3748; stroke: white; stroke-width: 2; cursor: pointer; }
+        .border-dot { fill: #d69e2e; stroke: white; stroke-width: 2; cursor: pointer; }
+        .capital-dot { fill: #805ad5; stroke: white; stroke-width: 3; cursor: pointer; }
+        
+        .city-dot:hover, .border-dot:hover, .capital-dot:hover { 
+            transform: scale(1.2); 
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        
+        .city-label {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            fill: #2d3748;
+            text-anchor: middle;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px white;
+        }
+        
+        .boundary-line {
+            stroke: #4a5568;
+            stroke-width: 2;
+            stroke-dasharray: 6,3;
+            fill: none;
+            opacity: 0.7;
+        }
+        
+        .legend {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .legend h4 {
+            margin-bottom: 15px;
+            color: #2d3748;
+            font-size: 1em;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                display: grid;
+            }
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: #2d3748;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔧 Scheduling Team Region Divide</h1>
+    </div>
+    
+    <div class="search-section">
+        <div class="search-container">
+            <input type="text" 
+                   class="search-input" 
+                   id="citySearch" 
+                   placeholder="Enter any UK city or town (e.g., Reading, Blackpool, Inverness...)"
+                   autocomplete="off">
+            <button class="search-btn" onclick="searchCity()">Find Region</button>
+        </div>
+        <div class="search-result result-placeholder" id="searchResult">
+            Enter a city name above to find which team covers that location
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="map-container">
+            <svg class="map-svg" viewBox="0 0 400 600">
+                <!-- SCOTLAND -->
+                <path class="region3" d="M150 30 L250 25 L280 35 L300 50 L310 70 L315 90 L310 110 L300 125 L280 135 L250 140 L220 138 L190 135 L170 130 L155 120 L145 105 L140 85 L142 65 L148 45 Z"/>
+                
+                <!-- NORTHERN ENGLAND -->
+                <path class="region2" d="M155 140 L280 135 L300 145 L310 165 L315 185 L310 205 L300 220 L285 230 L270 235 L250 238 L230 240 L210 238 L190 235 L175 230 L165 220 L158 205 L155 185 L157 165 Z"/>
+                
+                <!-- CENTRAL ENGLAND -->
+                <path class="region2" d="M165 240 L285 235 L300 245 L310 265 L315 285 L310 305 L300 320 L285 330 L270 335 L250 338 L230 340 L210 338 L190 335 L175 330 L165 320 L160 305 L158 285 L160 265 Z"/>
+                
+                <!-- WALES -->
+                <path class="region3" d="M120 280 L165 275 L170 295 L175 315 L170 335 L165 355 L158 370 L148 380 L135 385 L125 388 L115 385 L108 380 L105 370 L108 355 L112 340 L115 325 L118 310 L120 295 Z"/>
+                
+                <!-- LONDON & SOUTH EAST -->
+                <path class="region1" d="M200 340 L310 335 L330 345 L345 365 L350 385 L345 405 L335 420 L320 430 L300 435 L280 438 L260 440 L240 438 L220 435 L205 430 L195 420 L190 405 L188 385 L190 365 L195 350 Z"/>
+                
+                <!-- SOUTH WEST ENGLAND -->
+                <path class="region3" d="M158 385 L195 380 L210 390 L220 410 L225 430 L230 450 L235 470 L240 490 L235 510 L225 525 L210 535 L190 540 L170 542 L150 540 L135 535 L125 525 L120 510 L118 490 L120 470 L125 450 L130 430 L135 410 L145 395 Z"/>
+                
+                <!-- EAST ENGLAND -->
+                <path class="region1" d="M310 285 L350 280 L365 290 L375 310 L380 330 L375 350 L365 365 L350 375 L330 380 L315 378 L310 360 L312 340 L315 320 L312 300 Z"/>
+                
+                <!-- NORTHERN IRELAND -->
+                <path class="region3" d="M80 200 L115 195 L125 205 L130 220 L125 235 L115 245 L100 250 L90 248 L82 240 L78 225 L80 210 Z"/>
+                
+                <!-- Boundary lines -->
+                <line class="boundary-line" x1="165" y1="275" x2="158" y2="385"/>
+                <line class="boundary-line" x1="195" y1="380" x2="200" y2="340"/>
+                <line class="boundary-line" x1="310" y1="335" x2="315" y2="285"/>
+                <line class="boundary-line" x1="315" y1="285" x2="350" y2="280"/>
+                <line class="boundary-line" x1="310" y1="205" x2="155" y2="140"/>
+                
+                <!-- REGION 1 CITIES -->
+                <circle class="capital-dot" cx="275" cy="395" r="6"/>
+                <text class="city-label" x="275" y="385">LONDON</text>
+                
+                <circle class="city-dot" cx="340" cy="330" r="4"/>
+                <text class="city-label" x="340" y="322">Norwich</text>
+                
+                <circle class="city-dot" cx="290" cy="440" r="4"/>
+                <text class="city-label" x="290" y="432">Southampton</text>
+                
+                <circle class="city-dot" cx="305" cy="450" r="4"/>
+                <text class="city-label" x="305" y="442">Portsmouth</text>
+                
+                <circle class="city-dot" cx="320" cy="375" r="4"/>
+                <text class="city-label" x="320" y="367">Canterbury</text>
+                
+                <circle class="city-dot" cx="355" cy="315" r="4"/>
+                <text class="city-label" x="355" y="307">Ipswich</text>
+                
+                <!-- REGION 2 CITIES -->
+                <circle class="city-dot" cx="190" cy="190" r="5"/>
+                <text class="city-label" x="190" y="182">Manchester</text>
+                
+                <circle class="city-dot" cx="170" cy="195" r="4"/>
+                <text class="city-label" x="170" y="187">Liverpool</text>
+                
+                <circle class="city-dot" cx="205" cy="280" r="5"/>
+                <text class="city-label" x="205" y="272">Birmingham</text>
+                
+                <circle class="city-dot" cx="220" cy="180" r="4"/>
+                <text class="city-label" x="220" y="172">Leeds</text>
+                
+                <circle class="city-dot" cx="230" cy="200" r="4"/>
+                <text class="city-label" x="230" y="192">Sheffield</text>
+                
+                <circle class="city-dot" cx="250" cy="275" r="4"/>
+                <text class="city-label" x="250" y="267">Leicester</text>
+                
+                <circle class="city-dot" cx="280" cy="260" r="4"/>
+                <text class="city-label" x="280" y="252">Nottingham</text>
+                
+                <!-- REGION 3 CITIES -->
+                <circle class="capital-dot" cx="220" cy="85" r="5"/>
+                <text class="city-label" x="220" y="77">Edinburgh</text>
+                
+                <circle class="city-dot" cx="185" cy="95" r="5"/>
+                <text class="city-label" x="185" y="87">Glasgow</text>
+                
+                <circle class="city-dot" cx="260" cy="75" r="4"/>
+                <text class="city-label" x="260" y="67">Aberdeen</text>
+                
+                <circle class="capital-dot" cx="140" cy="335" r="5"/>
+                <text class="city-label" x="140" y="327">Cardiff</text>
+                
+                <circle class="capital-dot" cx="100" cy="220" r="4"/>
+                <text class="city-label" x="100" y="212">Belfast</text>
+                
+                <circle class="city-dot" cx="180" cy="520" r="4"/>
+                <text class="city-label" x="180" y="512">Plymouth</text>
+                
+                <circle class="city-dot" cx="195" cy="420" r="4"/>
+                <text class="city-label" x="195" y="412">Swindon</text>
+                
+                <circle class="city-dot" cx="215" cy="440" r="4"/>
+                <text class="city-label" x="215" y="432">Salisbury</text>
+                
+                <!-- BORDER CITIES -->
+                <circle class="border-dot" cx="175" cy="400" r="5"/>
+                <text class="city-label" x="175" y="392">Bristol</text>
+                
+                <circle class="border-dot" cx="220" cy="360" r="5"/>
+                <text class="city-label" x="220" y="352">Oxford</text>
+                
+                <circle class="border-dot" cx="175" cy="215" r="4"/>
+                <text class="city-label" x="175" y="207">Preston</text>
+                
+                <circle class="border-dot" cx="270" cy="150" r="4"/>
+                <text class="city-label" x="270" y="142">Newcastle</text>
+            </svg>
+        </div>
+        
+        <div class="sidebar">
+            <div class="region-card region1-card">
+                <h3>🔴 REGION 1: LONDON & SOUTH EAST</h3>
+                <div class="population-stat">22.8 Million People</div>
+                <div class="cities-grid">
+                    <div class="city-tag city-capital">London HQ</div>
+                    <div class="city-tag city-major">Norwich</div>
+                    <div class="city-tag city-major">Southampton</div>
+                    <div class="city-tag city-major">Portsmouth</div>
+                    <div class="city-tag city-major">Canterbury</div>
+                    <div class="city-tag city-major">Ipswich</div>
+                    <div class="city-tag city-border">Oxford</div>
+                    <div class="city-tag city-border">Milton Keynes</div>
+                </div>
+            </div>
+            
+            <div class="region-card region2-card">
+                <h3>🔵 REGION 2: NORTH & CENTRAL</h3>
+                <div class="population-stat">22.8 Million People</div>
+                <div class="cities-grid">
+                    <div class="city-tag city-major">Manchester</div>
+                    <div class="city-tag city-major">Liverpool</div>
+                    <div class="city-tag city-major">Birmingham</div>
+                    <div class="city-tag city-major">Leeds</div>
+                    <div class="city-tag city-major">Sheffield</div>
+                    <div class="city-tag city-major">Leicester</div>
+                    <div class="city-tag city-major">Nottingham</div>
+                    <div class="city-tag city-border">Preston</div>
+                    <div class="city-tag city-border">Newcastle</div>
+                    <div class="city-tag city-border">Chester</div>
+                </div>
+            </div>
+            
+            <div class="region-card region3-card">
+                <h3>🟢 REGION 3: SCOTLAND, WALES & SW</h3>
+                <div class="population-stat">22.7 Million People</div>
+                <div class="cities-grid">
+                    <div class="city-tag city-capital">Edinburgh</div>
+                    <div class="city-tag city-capital">Cardiff</div>
+                    <div class="city-tag city-capital">Belfast</div>
+                    <div class="city-tag city-major">Glasgow</div>
+                    <div class="city-tag city-major">Aberdeen</div>
+                    <div class="city-tag city-major">Plymouth</div>
+                    <div class="city-tag city-major">Swindon</div>
+                    <div class="city-tag city-major">Salisbury</div>
+                    <div class="city-tag city-border">Bristol</div>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <h4>📍 Location Types</h4>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #805ad5;"></div>
+                    <span>Regional Capitals</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #2d3748;"></div>
+                    <span>Major Service Hubs</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #d69e2e;"></div>
+                    <span>Border Cities</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // Comprehensive UK city database
+        const cityDatabase = {
+            // REGION 1: LONDON & SOUTH EAST
+            'london': 'region1', 'norwich': 'region1', 'canterbury': 'region1', 'dover': 'region1',
+            'brighton': 'region1', 'colchester': 'region1', 'ipswich': 'region1', 'guildford': 'region1',
+            'southampton': 'region1', 'portsmouth': 'region1', 'oxford': 'region1', 'milton keynes': 'region1',
+            'reading': 'region1', 'luton': 'region1', 'cambridge': 'region1', 'chelmsford': 'region1',
+            'watford': 'region1', 'st albans': 'region1', 'stevenage': 'region1', 'basildon': 'region1',
+            'southend': 'region1', 'southend-on-sea': 'region1', 'maidstone': 'region1', 'dartford': 'region1',
+            'chatham': 'region1', 'margate': 'region1', 'folkestone': 'region1', 'ashford': 'region1',
+            'crawley': 'region1', 'worthing': 'region1', 'eastbourne': 'region1', 'hastings': 'region1',
+            'chichester': 'region1', 'winchester': 'region1', 'basingstoke': 'region1', 'andover': 'region1',
+            'aldershot': 'region1', 'woking': 'region1', 'epsom': 'region1', 'croydon': 'region1',
+            'slough': 'region1', 'windsor': 'region1', 'bracknell': 'region1', 'high wycombe': 'region1',
+            'aylesbury': 'region1', 'hemel hempstead': 'region1', 'peterborough': 'region1',
+            
+            // REGION 2: NORTH & CENTRAL ENGLAND  
+            'manchester': 'region2', 'liverpool': 'region2', 'birmingham': 'region2', 'leeds': 'region2',
+            'sheffield': 'region2', 'leicester': 'region2', 'nottingham': 'region2', 'york': 'region2',
+            'hull': 'region2', 'coventry': 'region2', 'wolverhampton': 'region2', 'preston': 'region2',
+            'newcastle': 'region2','Middlesbrough': 'region2', 'chester': 'region2', 'stoke': 'region2', 'stoke-on-trent': 'region2',
+            'blackpool': 'region2', 'bolton': 'region2', 'wigan': 'region2', 'stockport': 'region2',
+            'oldham': 'region2', 'rochdale': 'region2', 'salford': 'region2', 'bury': 'region2',
+            'warrington': 'region2', 'burnley': 'region2', 'blackburn': 'region2', 'lancaster': 'region2',
+            'carlisle': 'region2', 'bradford': 'region2', 'wakefield': 'region2', 'huddersfield': 'region2',
+            'barnsley': 'region2', 'rotherham': 'region2', 'doncaster': 'region2', 'grimsby': 'region2',
+            'lincoln': 'region2', 'boston': 'region2', 'newark': 'region2', 'mansfield': 'region2',
+            'derby': 'region2', 'stafford': 'region2', 'crewe': 'region2', 'macclesfield': 'region2',
+            'northampton': 'region2', 'kettering': 'region2', 'wellingborough': 'region2', 'corby': 'region2',
+            'nuneaton': 'region2', 'rugby': 'region2', 'warwick': 'region2', 'solihull': 'region2',
+            'west bromwich': 'region2', 'walsall': 'region2', 'dudley': 'region2', 'worcester': 'region2',
+            
+            // REGION 3: SCOTLAND, WALES, SW ENGLAND & NI
+            'edinburgh': 'region3', 'glasgow': 'region3', 'aberdeen': 'region3', 'dundee': 'region3',
+            'cardiff': 'region3', 'swansea': 'region3', 'belfast': 'region3', 'plymouth': 'region3',
+            'exeter': 'region3', 'bournemouth': 'region3', 'bristol': 'region3', 'bath': 'region3',
+            'swindon': 'region3', 'salisbury': 'region3', 'taunton': 'region3', 'yeovil': 'region3',
+            'torquay': 'region3', 'paignton': 'region3', 'newton abbot': 'region3', 'barnstaple': 'region3',
+            'newquay': 'region3', 'truro': 'region3', 'falmouth': 'region3', 'penzance': 'region3',
+            'poole': 'region3', 'weymouth': 'region3', 'dorchester': 'region3', 'bridport': 'region3',
+            'newport': 'region3', 'pontypridd': 'region3', 'merthyr tydfil': 'region3', 'bridgend': 'region3',
+            'neath': 'region3', 'port talbot': 'region3', 'llanelli': 'region3', 'carmarthen': 'region3',
+            'haverfordwest': 'region3', 'pembroke': 'region3', 'tenby': 'region3', 'brecon': 'region3',
+            'welshpool': 'region3', 'bangor': 'region3', 'caernarfon': 'region3', 'llandudno': 'region3',
+            'rhyl': 'region3', 'wrexham': 'region3', 'stirling': 'region3', 'falkirk': 'region3',
+            'livingston': 'region3', 'motherwell': 'region3', 'hamilton': 'region3', 'east kilbride': 'region3',
+            'paisley': 'region3', 'greenock': 'region3', 'ayr': 'region3', 'kilmarnock': 'region3',
+            'dumfries': 'region3', 'stranraer': 'region3', 'inverness': 'region3', 'fort william': 'region3',
+            'oban': 'region3', 'thurso': 'region3', 'wick': 'region3', 'elgin': 'region3',
+            'lisburn': 'region3', 'ballymena': 'region3', 'newry': 'region3', 'bangor ni': 'region3',
+            'coleraine': 'region3', 'omagh': 'region3', 'enniskillen': 'region3', 'armagh': 'region3'
+        };
+
+        function searchCity() {
+            const input = document.getElementById('citySearch').value.toLowerCase().trim();
+            const result = document.getElementById('searchResult');
+            
+            if (!input) {
+                result.innerHTML = 'Please enter a city or town name';
+                result.className = 'search-result result-placeholder';
+                return;
+            }
+            
+            // Look for exact match or partial match
+            let foundRegion = cityDatabase[input];
+            
+            if (!foundRegion) {
+                // Try partial matching
+                const matches = Object.keys(cityDatabase).filter(city => 
+                    city.includes(input) || input.includes(city.split(' ')[0])
+                );
+                
+                if (matches.length > 0) {
+                    foundRegion = cityDatabase[matches[0]];
+                }
+            }
+            
+            if (foundRegion) {
+                let regionInfo = getRegionInfo(foundRegion);
+                result.innerHTML = `
+                    <div><strong>${input.toUpperCase()}</strong> is covered by:</div>
+                    <div style="margin-top: 8px; font-size: 18px;"><strong>${regionInfo.name}</strong></div>
+                    <div style="margin-top: 4px; font-size: 14px; opacity: 0.8;">${regionInfo.details}</div>
+                `;
+                result.className = `search-result ${regionInfo.class}`;
+            } else {
+                result.innerHTML = `
+                    <div><strong>${input.toUpperCase()}</strong> not found</div>
+                    <div style="margin-top: 4px; font-size: 14px;">Please check spelling or try a major nearby city</div>
+                `;
+                result.className = 'search-result result-placeholder';
+            }
+        }
+
+        function getRegionInfo(region) {
+            switch(region) {
+                case 'region1':
+                    return {
+                        name: '🔴 REGION 1: LONDON & SOUTH EAST',
+                        details: 'Red Team • 22.8M people • Dense retail coverage',
+                        class: 'result-region1'
+                    };
+                case 'region2':
+                    return {
+                        name: '🔵 REGION 2: NORTH & CENTRAL',
+                        details: 'Blue Team • 22.8M people • Industrial centers',
+                        class: 'result-region2'
+                    };
+                case 'region3':
+                    return {
+                        name: '🟢 REGION 3: SCOTLAND, WALES & SW',
+                        details: 'Green Team • 22.7M people • Wide geographic area',
+                        class: 'result-region3'
+                    };
+            }
+        }
+
+        // Enter key functionality
+        document.getElementById('citySearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchCity();
+            }
+        });
+
+        // Tooltip functionality
+        const tooltip = document.getElementById('tooltip');
+        const interactiveElements = document.querySelectorAll('.city-dot, .border-dot, .capital-dot, .region1, .region2, .region3');
+        
+        interactiveElements.forEach(element => {
+            element.addEventListener('mouseenter', (e) => {
+                let tooltipText = '';
+                
+                if (e.target.classList.contains('region1')) {
+                    tooltipText = 'Region 1: London & South East<br>22.8M people • Dense retail coverage';
+                } else if (e.target.classList.contains('region2')) {
+                    tooltipText = 'Region 2: North & Central<br>22.8M people • Industrial centers';
+                } else if (e.target.classList.contains('region3')) {
+                    tooltipText = 'Region 3: Scotland, Wales & SW<br>22.7M people • Wide geographic area';
+                } else {
+                    const label = e.target.nextElementSibling;
+                    const cityName = label ? label.textContent : 'City';
+                    
+                    if (e.target.classList.contains('capital-dot')) {
+                        tooltipText = `${cityName} (Regional Capital)`;
+                    } else if (e.target.classList.contains('border-dot')) {
+                        tooltipText = `${cityName} (Border City - Coordination Required)`;
+                    } else {
+                        tooltipText = `${cityName} (Major Service Hub)`;
+                    }
+                }
+                
+                tooltip.innerHTML = tooltipText;
+                tooltip.style.opacity = '1';
+            });
+            
+            element.addEventListener('mouseleave', () => {
+                tooltip.style.opacity = '0';
+            });
+            
+            element.addEventListener('mousemove', (e) => {
+                tooltip.style.left = e.pageX + 10 + 'px';
+                tooltip.style.top = e.pageY - 30 + 'px';
+            });
+        });
+    </script>
+</body>
+</html>
